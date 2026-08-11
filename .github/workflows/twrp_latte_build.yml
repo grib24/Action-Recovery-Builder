@@ -56,19 +56,22 @@ on:
 jobs:
   build:
     if: github.event.repository.owner.id == github.event.sender.id
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04  # ← изменили версию
     steps:
-    - name: Display Run Parameters
+    - name: Prepare the environment
       run: |
-        echo "::group::User Environment Variables"
-        echo "Manifest Branch: ${{ inputs.MANIFEST_BRANCH }}"
-        echo "Device Tree URL: ${{ inputs.DEVICE_TREE_URL }}"
-        echo "Device Tree Branch: ${{ inputs.DEVICE_TREE_BRANCH }}"
-        echo "Device Path: ${{ inputs.DEVICE_PATH }}"
-        echo "Device Name: ${{ inputs.DEVICE_NAME }}"
-        echo "Build Target: ${{ inputs.BUILD_TARGET }}.img"
-        echo "Include Recovery Installer: ${{ inputs.RECOVERY_INSTALLER }}"
-        echo "::endgroup::"
+        sudo apt update
+        sudo apt -y upgrade
+        sudo apt -y install gperf gcc-multilib g++-multilib libc6-dev \
+          lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev \
+          libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev \
+          lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev \
+          libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev \
+          lzma ncftp qemu-user-static libtinfo5 \
+          python-is-python3  # ← добавлен для Ubuntu 22.04
+        sudo add-apt-repository universe
+        sudo apt -y install libncurses5
+        sudo ln -sf /usr/bin/python3 /usr/bin/python  # ← для совместимости
  
     - name: Check Out
       uses: actions/checkout@v4
