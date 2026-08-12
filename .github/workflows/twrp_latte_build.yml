@@ -204,32 +204,6 @@ jobs:
     - name: Building recovery (AOSP)
       if: steps.manifest.outputs.build_type == 'aosp'
       run: |
-        # Сначала ищем правильный путь к core_64bit.mk
-        cd device/realme/ussi_arm64
-        CORE_PATH=""
-        if [ -f ../../build/make/target/product/core_64bit.mk ]; then
-          CORE_PATH="build/make/target/product/core_64bit.mk"
-        elif [ -f ../../build/target/product/core_64bit.mk ]; then
-          CORE_PATH="build/target/product/core_64bit.mk"
-        elif [ -f ../../core/target/product/core_64bit.mk ]; then
-          CORE_PATH="core/target/product/core_64bit.mk"
-        else
-          echo "Searching for core_64bit.mk..."
-          FOUND=$(find ../../ -name "core_64bit.mk" -type f | head -1)
-          if [ -n "$FOUND" ]; then
-            CORE_PATH=$(echo $FOUND | sed 's|../../||')
-            echo "Found at: $CORE_PATH"
-          fi
-        fi
-        
-        if [ -n "$CORE_PATH" ]; then
-          echo "Using core_64bit.mk from: $CORE_PATH"
-          sed -i "s|.*core_64bit.mk.*|$(call inherit-product, $CORE_PATH)|g" twrp_latte.mk
-        else
-          echo "WARNING: core_64bit.mk not found!"
-        fi
-        
-        cd ../../..
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
         export PLATFORM_VERSION=16
