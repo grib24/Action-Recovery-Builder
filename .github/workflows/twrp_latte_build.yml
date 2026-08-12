@@ -56,7 +56,8 @@ on:
 jobs:
   build:
     if: github.event.repository.owner.id == github.event.sender.id
-    runs-on: ubuntu-22.04  # ← изменили версию
+    runs-on: ubuntu-22.04
+    timeout-minutes: 300
     steps:
     - name: Prepare the environment
       run: |
@@ -67,11 +68,10 @@ jobs:
           libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev \
           lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev \
           libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev \
-          lzma ncftp qemu-user-static libtinfo5 \
-          python-is-python3  # ← добавлен для Ubuntu 22.04
+          lzma ncftp qemu-user-static libtinfo5 python-is-python3
         sudo add-apt-repository universe
         sudo apt -y install libncurses5
-        sudo ln -sf /usr/bin/python3 /usr/bin/python  # ← для совместимости
+        sudo ln -sf /usr/bin/python3 /usr/bin/python
  
     - name: Check Out
       uses: actions/checkout@v4
@@ -83,14 +83,6 @@ jobs:
       uses: pierotofy/set-swap-space@master
       with:
         swap-size-gb: 24
-
-    - name: Prepare the environment
-      run: |
-        sudo apt update
-        sudo apt -y upgrade
-        sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libtinfo5
-        sudo add-apt-repository universe
-        sudo apt -y install libncurses5
 
     - name: Determine manifest
       id: manifest
@@ -150,70 +142,27 @@ jobs:
         repo sync -j$(nproc --all) --force-sync
       working-directory: workspace
 
-    - name: Create roomservice.xml
+    - name: Clone device tree
+      run: |
+        git clone --depth=1 ${{ inputs.DEVICE_TREE_URL }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
+      working-directory: workspace
+
+    - name: Create local manifest
       run: |
         mkdir -p .repo/local_manifests
-        cp -f ${GITHUB_WORKSPACE}/templates/*.xml .repo/local_manifests/
-      working-directory: workspace
-
-    - name: Clone device tree (TeamWin)
-      if: |
-        contains( inputs.DEVICE_TREE_URL,'/TeamWin/' )
-        && steps.manifest.outputs.build_type == 'aosp'
-      run: |
-        sed -i "s%\!--project name=\"{DEVICE_TREE_URL_REPO}%project name=\"$(grep -oP '(?<=TeamWin/).*' <<< ${{ inputs.DEVICE_TREE_URL }})%g" .repo/local_manifests/roomservice.xml
-        sed -i "s%{DEVICE_PATH}%${{ inputs.DEVICE_PATH }}%g" .repo/local_manifests/roomservice.xml
-        sed -i "s%{DEVICE_REMOTE_NAME}%TeamWin%g" .repo/local_manifests/roomservice.xml
-        sed -i "s%{DEVICE_TREE_BRANCH}\"/-->%${{ inputs.DEVICE_TREE_BRANCH }}\"/>%g" .repo/local_manifests/roomservice.xml
+        cat > .repo/local_manifests/latte.xml << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <manifest>
+          <project path="${{ inputs.DEVICE_PATH }}" name="$(echo ${{ inputs.DEVICE_TREE_URL }} | cut -d'/' -f4-5)" revision="${{ inputs.DEVICE_TREE_BRANCH }}" remote="github" />
+        </manifest>
+        EOF
         repo sync -j$(nproc --all)
       working-directory: workspace
-
-    - name: Clone device tree (Github/Other)
-      if: |
-        !contains( inputs.DEVICE_TREE_URL,'/TeamWin/' )
-        && steps.manifest.outputs.build_type == 'aosp'
-      run: |
-        REMOTE_NAME=$(grep -oP '(?<=://).*(?=\.)' <<< ${{ inputs.DEVICE_TREE_URL }})
-        REMOTE_FETCH=$(grep -oP '(?<=://).*?(?=\/)' <<< ${{ inputs.DEVICE_TREE_URL }})
-        if [ "${REMOTE_NAME}" != "github" ]; then
-          sed -i "s%\!--remote name=\"{REMOTE_NAME}%remote name=\"${REMOTE_NAME}%g" .repo/local_manifests/roomservice.xml
-          sed -i "s%{REMOTE_FETCH}\"/-->%${REMOTE_FETCH}\"/>%g" .repo/local_manifests/roomservice.xml
-        fi
-        sed -i "s%\!--project name=\"{DEVICE_TREE_URL_REPO}%project name=\"$(grep -oP "(?<=${REMOTE_FETCH}/).*" <<< ${{ inputs.DEVICE_TREE_URL }})%g" .repo/local_manifests/roomservice.xml
-        sed -i "s%{DEVICE_PATH}%${{ inputs.DEVICE_PATH }}%g" .repo/local_manifests/roomservice.xml
-        sed -i "s%{DEVICE_REMOTE_NAME}%${REMOTE_NAME}%g" .repo/local_manifests/roomservice.xml
-        sed -i "s%{DEVICE_TREE_BRANCH}\"/-->%${{ inputs.DEVICE_TREE_BRANCH }}\"/>%g" .repo/local_manifests/roomservice.xml
-        repo sync -j$(nproc --all)
-      working-directory: workspace
-
-    - name: Clone device tree (Omni)
-      if: steps.manifest.outputs.build_type == 'omni'
-      run: |
-        git clone ${{ inputs.DEVICE_TREE_URL }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
-      working-directory: workspace
-
-    - name: Sync Device Dependencies (AOSP)
-      if: steps.manifest.outputs.build_type == 'aosp'
-      run: |
-        source build/envsetup.sh
-        lunch twrp_${{ inputs.DEVICE_NAME }}-eng
-      working-directory: workspace
-      id: syncdevicedeps
-      continue-on-error: true
-
-    - name: Sync Device Dependencies (Omni/subdevices)
-      if: |
-        steps.manifest.outputs.build_type == 'omni'
-        || steps.syncdevicedeps.outcome == 'failure'
-      run: |
-        bash ${GITHUB_WORKSPACE}/scripts/convert.sh ${{ inputs.DEVICE_PATH }}/${{ steps.manifest.outputs.build_type }}.dependencies
-        repo sync -j$(nproc --all)
-      working-directory: workspace
-      continue-on-error: true
 
     - name: Repopick Gerrit patches
       if: inputs.REPOPICK_PATCHES != null
       run: |
+        cd workspace
         source build/envsetup.sh
         repopick -g https://gerrit.twrp.me ${{ inputs.REPOPICK_PATCHES }}
       working-directory: workspace
@@ -222,6 +171,8 @@ jobs:
     - name: Include Recovery Installer
       if: inputs.RECOVERY_INSTALLER == true && inputs.MANIFEST_BRANCH != '6.0' && inputs.BUILD_TARGET != 'vendor_boot'
       run: |
+        cd workspace
+        source build/envsetup.sh
         case ${{ inputs.MANIFEST_BRANCH }} in
           7.1)
             patchNum=5080
@@ -239,7 +190,6 @@ jobs:
             patchNum=5445
             ;;
         esac
-        source build/envsetup.sh
         repopick -g https://gerrit.twrp.me ${patchNum}
       working-directory: workspace
       id: recoveryinstaller
@@ -255,24 +205,40 @@ jobs:
     - name: Building recovery (AOSP)
       if: steps.manifest.outputs.build_type == 'aosp'
       run: |
+        cd workspace
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
+        export PLATFORM_VERSION=16
+        
         if [ ${{ inputs.RECOVERY_INSTALLER }} = true ] && [ ${{ steps.recoveryinstaller.outcome == 'success' }} ]; then
           export USE_RECOVERY_INSTALLER=true
           export RECOVERY_INSTALLER_PATH=bootable/recovery/installer
         fi
-        lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make $(tr -d _ <<< ${{ inputs.BUILD_TARGET }})image -j$(nproc --all)
+        
+        # Пробуем стандартный lunch
+        if lunch twrp_${{ inputs.DEVICE_NAME }}-eng 2>/dev/null; then
+          echo "Lunch succeeded, building..."
+          make $(tr -d _ <<< ${{ inputs.BUILD_TARGET }})image -j$(nproc --all)
+        else
+          echo "Lunch failed, using direct make..."
+          export TARGET_PRODUCT=twrp_${{ inputs.DEVICE_NAME }}
+          export TARGET_DEVICE=${{ inputs.DEVICE_NAME }}
+          make -j$(nproc --all) $(tr -d _ <<< ${{ inputs.BUILD_TARGET }})image
+        fi
       working-directory: workspace
 
     - name: Building recovery (Omni)
       if: steps.manifest.outputs.build_type == 'omni'
       run: |
+        cd workspace
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
+        
         if [ ${{ inputs.RECOVERY_INSTALLER }} = true ] && [ ${{ steps.recoveryinstaller.outcome == 'success' }} ]; then
           export USE_RECOVERY_INSTALLER=true
           export RECOVERY_INSTALLER_PATH=bootable/recovery/installer
         fi
+        
         lunch ${{ steps.manifest.outputs.build_type }}_${{ inputs.DEVICE_NAME }}-eng && make ${{ inputs.BUILD_TARGET }}image -j$(nproc --all)
       working-directory: workspace
 
