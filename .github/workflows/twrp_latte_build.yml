@@ -147,32 +147,11 @@ jobs:
         repo sync -j$(nproc --all) --force-sync
       working-directory: workspace
 
-    - name: Copy remove-minimal.xml to root local_manifests
-      run: |
-        # Проверяем, существует ли файл в дереве устройств
-        if [ -f device/realme/ussi_arm64/.repo/local_manifests/remove-minimal.xml ]; then
-          mkdir -p .repo/local_manifests
-          cp device/realme/ussi_arm64/.repo/local_manifests/remove-minimal.xml .repo/local_manifests/
-          echo "✅ remove-minimal.xml copied to root .repo/local_manifests/"
-        else
-          echo "❌ remove-minimal.xml not found in device tree!"
-          # Создаём минимальный файл, чтобы избежать ошибки
-          cat > .repo/local_manifests/remove-minimal.xml << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <manifest>
-              <!-- No projects to remove -->
-          </manifest>
-          EOF
-          echo "⚠️ Created empty remove-minimal.xml"
-        fi
-        ls -la .repo/local_manifests/
-      working-directory: workspace
-
     - name: Create local manifest
       run: |
         mkdir -p .repo/local_manifests
         
-        # Создаём roomservice.xml с полным манифестом
+        # Создаём roomservice.xml с полным манифестом (без remove-minimal.xml)
         cat > .repo/local_manifests/roomservice.xml << 'EOF'
         <?xml version="1.0" encoding="UTF-8"?>
         <manifest>
@@ -276,9 +255,6 @@ jobs:
 
             <!-- Your device tree -->
             <project path="${{ inputs.DEVICE_PATH }}" name="$(echo ${{ inputs.DEVICE_TREE_URL }} | cut -d'/' -f4-5)" remote="github" revision="${{ inputs.DEVICE_TREE_BRANCH }}" />
-
-            <!-- LAST: Remove unused projects for minimal manifest -->
-            <include name="remove-minimal.xml"/>
         </manifest>
         EOF
         
