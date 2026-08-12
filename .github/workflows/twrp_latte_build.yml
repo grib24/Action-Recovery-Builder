@@ -341,6 +341,20 @@ jobs:
         cat device/latte/Android.bp
       working-directory: workspace
 
+    - name: Fix vendor_boot configuration
+      run: |
+        # Добавляем настройки для сборки vendor_boot без ядра
+        echo "" >> device/latte/BoardConfig.mk
+        echo "# Vendor_boot configuration (no kernel, only dtb)" >> device/latte/BoardConfig.mk
+        echo "TARGET_NO_KERNEL := true" >> device/latte/BoardConfig.mk
+        echo "BOARD_KERNEL_IMAGE_NAME := dummy" >> device/latte/BoardConfig.mk
+        echo "✅ Added vendor_boot configuration to BoardConfig.mk"
+        
+        # Проверяем, что настройки добавились
+        echo "📁 Current BoardConfig.mk kernel settings:"
+        grep -E "NO_KERNEL|KERNEL_IMAGE" device/latte/BoardConfig.mk || echo "Settings not found"
+      working-directory: workspace
+
     - name: Fix 64-bit app support
       run: |
         # Добавляем флаг для поддержки 32-битных приложений
