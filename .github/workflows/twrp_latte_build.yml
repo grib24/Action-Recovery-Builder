@@ -151,50 +151,12 @@ jobs:
       run: |
         mkdir -p .repo/local_manifests
         
-        # Создаём roomservice.xml только с дополнительными проектами
+        # Минимальный roomservice.xml только с необходимыми проектами
         cat > .repo/local_manifests/roomservice.xml << 'EOF'
         <?xml version="1.0" encoding="UTF-8"?>
         <manifest>
-            <remote name="TeamWin"
-                    fetch="https://github.com/TeamWin"
-                    review="https://gerrit.twrp.me"/>
-
-            <remote name="LineageOS"
-                    fetch="https://github.com/LineageOS"
-                    review="https://review.lineageos.org"/>
-
-            <remote name="TWRP-A16"
-                    fetch="https://github.com/TWRP-Test"/>
-
-            <remote name="github"
-                    fetch="https://github.com"/>
-
             <!-- Add your device tree -->
             <project path="${{ inputs.DEVICE_PATH }}" name="$(echo ${{ inputs.DEVICE_TREE_URL }} | cut -d'/' -f4-5)" remote="github" revision="${{ inputs.DEVICE_TREE_BRANCH }}" />
-
-            <!-- Include libmicrohttpd for TWRP -->
-            <project name="android_external_libmicrohttpd" path="external/libmicrohttpd" remote="TWRP-A16" revision="twrp-16.0" />
-            
-            <!-- Include fake OMAPI for TWRP -->
-            <project name="android_se_omapi" path="external/se_omapi" remote="TWRP-A16" revision="twrp-16.0" />
-
-            <!-- Include phh's treble repo for lptools support -->
-            <project name="phhusson/vendor_lptools" path="external/lptools" remote="github" revision="master" />
-
-            <!-- Include external/bash for bash support -->
-            <project path="external/bash" name="android_external_bash" remote="LineageOS" revision="lineage-22.2"/>
-
-            <!-- Include external/libncurses for bash and nano support -->
-            <project path="external/libncurses" name="android_external_libncurses" remote="LineageOS" revision="lineage-22.2"/>
-
-            <!-- Include external/nano for nano support -->
-            <project path="external/nano" name="android_external_nano" remote="LineageOS" revision="lineage-22.2"/>
-
-            <!-- Include ntfs_3g for NTFS support -->
-            <project path="external/ntfs-3g" name="android_external_ntfs-3g" remote="LineageOS" revision="lineage-22.2"/>
-
-            <!-- Include lineage-tools for lzma support -->
-            <project path="prebuilts/tools-lineage" name="android_prebuilts_tools-lineage" remote="LineageOS" revision="lineage-22.2"/>
 
             <!-- Include external Magisk repo for repack binaries -->
             <project path="external/magisk-prebuilt" name="external_magisk-prebuilt" remote="TeamWin" revision="android-12.1"/>
