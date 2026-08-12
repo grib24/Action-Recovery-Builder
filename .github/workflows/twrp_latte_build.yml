@@ -332,6 +332,14 @@ jobs:
         fi
       working-directory: workspace
 
+    - name: Fix dtb path in BoardConfig.mk
+      run: |
+        # Исправляем путь к dtb.img в BoardConfig.mk
+        sed -i 's|$(DEVICE_PATH)/dtb.img|device/latte/dtb.img|g' device/latte/BoardConfig.mk
+        echo "✅ Fixed dtb path in BoardConfig.mk"
+        grep -A2 "TARGET_PREBUILT_DTB" device/latte/BoardConfig.mk || echo "TARGET_PREBUILT_DTB not found"
+      working-directory: workspace
+
     - name: Fix Android.bp
       run: |
         cat > device/latte/Android.bp << 'EOF'
