@@ -151,7 +151,7 @@ jobs:
       run: |
         mkdir -p .repo/local_manifests
         
-        # Создаём roomservice.xml без remove-project
+        # Создаём roomservice.xml только с дополнительными проектами
         cat > .repo/local_manifests/roomservice.xml << 'EOF'
         <?xml version="1.0" encoding="UTF-8"?>
         <manifest>
@@ -169,41 +169,8 @@ jobs:
             <remote name="github"
                     fetch="https://github.com"/>
 
-            <!-- TWRP lives in TeamWin repo -->
-            <project path="bootable/recovery" name="android_bootable_recovery" remote="TWRP-A16" revision="twrp-16.0"/>
-
-            <!-- Use TeamWin repos for full recovery compatibility -->
-            <project path="build/make" name="android_build" remote="TWRP-A16" revision="twrp-16.0">
-                <linkfile src="CleanSpec.mk" dest="build/CleanSpec.mk" />
-                <linkfile src="buildspec.mk.default" dest="build/buildspec.mk.default" />
-                <linkfile src="core" dest="build/core" />
-                <linkfile src="envsetup.sh" dest="build/envsetup.sh" />
-                <linkfile src="target" dest="build/target" />
-                <linkfile src="tools" dest="build/tools" />
-            </project>
-            <project path="build/soong" name="android_build_soong" remote="TWRP-A16" revision="twrp-16.0">
-                <linkfile src="root.bp" dest="Android.bp" />
-                <linkfile src="bootstrap.bash" dest="bootstrap.bash" />
-            </project>
-            <project path="bionic" name="android_bionic" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="cts" name="android_cts" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="external/icu" name="android_external_icu" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="external/libxml2" name="android_external_libxml2" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="external/sqlite" name="android_external_sqlite" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="external/libchrome" name="android_external_libchrome" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="external/zstd" name="android_external_zstd" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="frameworks/hardware/interfaces" name="android_frameworks_hardware_interfaces" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="hardware/interfaces" name="android_hardware_interfaces" remote="TWRP-A16" revision="twrp-16.0" />
-            <project path="system/core" name="android_system_core" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="system/libhidl" name="android_system_libhidl" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="system/sepolicy" name="android_system_sepolicy" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="system/security" name="android_system_security" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="system/update_engine" name="android_system_update_engine" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="system/vold" name="android_system_vold" remote="TWRP-A16" revision="twrp-16.0"/>
-            <project path="system/extras" name="android_system_extras" remote="TWRP-A16" revision="twrp-16.0"/>
-
-            <!-- Use TeamWin custom vendor repo for build system -->
-            <project path="vendor/twrp" name="android_vendor_twrp" remote="TWRP-A16" revision="twrp-16.0" />
+            <!-- Add your device tree -->
+            <project path="${{ inputs.DEVICE_PATH }}" name="$(echo ${{ inputs.DEVICE_TREE_URL }} | cut -d'/' -f4-5)" remote="github" revision="${{ inputs.DEVICE_TREE_BRANCH }}" />
 
             <!-- Include libmicrohttpd for TWRP -->
             <project name="android_external_libmicrohttpd" path="external/libmicrohttpd" remote="TWRP-A16" revision="twrp-16.0" />
@@ -231,9 +198,6 @@ jobs:
 
             <!-- Include external Magisk repo for repack binaries -->
             <project path="external/magisk-prebuilt" name="external_magisk-prebuilt" remote="TeamWin" revision="android-12.1"/>
-
-            <!-- Your device tree -->
-            <project path="${{ inputs.DEVICE_PATH }}" name="$(echo ${{ inputs.DEVICE_TREE_URL }} | cut -d'/' -f4-5)" remote="github" revision="${{ inputs.DEVICE_TREE_BRANCH }}" />
         </manifest>
         EOF
         
