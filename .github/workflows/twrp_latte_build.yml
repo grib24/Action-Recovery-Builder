@@ -321,6 +321,15 @@ jobs:
         ls -la device/latte/
       working-directory: workspace
 
+    - name: Remove duplicate device tree
+      run: |
+        # Удаляем старое дерево устройств, чтобы избежать конфликта
+        rm -rf device/realme/ussi_arm64
+        echo "✅ Removed duplicate device tree at device/realme/ussi_arm64/"
+        echo "📁 Remaining device trees:"
+        ls -la device/
+      working-directory: workspace
+
     - name: Refresh product list
       run: |
         source build/envsetup.sh
