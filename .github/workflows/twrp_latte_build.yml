@@ -217,7 +217,7 @@ jobs:
 
         # Prebuilt DTB Image configuration (Obligatory for vendor_boot Header v4)
         TARGET_FORCE_PREBUILT_KERNEL := false
-        TARGET_PREBUILT_DTB := $(DEVICE_PATH)/prebuilts/dtb.img
+        TARGET_PREBUILT_DTB := $(DEVICE_PATH)/dtb.img
         BOARD_INCLUDE_DTB_IN_BOOTIMG := true
         BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
 
@@ -319,6 +319,17 @@ jobs:
         echo "✅ Device tree copied to device/latte/"
         echo "📁 Files in device/latte/:"
         ls -la device/latte/
+      working-directory: workspace
+
+    - name: Copy dtb.img to device root
+      run: |
+        if [ -f device/latte/prebuilts/dtb.img ]; then
+          cp device/latte/prebuilts/dtb.img device/latte/dtb.img
+          echo "✅ dtb.img copied to device/latte/"
+        else
+          echo "❌ dtb.img not found in prebuilts!"
+          exit 1
+        fi
       working-directory: workspace
 
     - name: Fix Android.bp
