@@ -150,21 +150,16 @@ jobs:
     - name: Create local manifest
       run: |
         mkdir -p .repo/local_manifests
-        
-        # Минимальный roomservice.xml только с необходимыми проектами
-        cat > .repo/local_manifests/roomservice.xml << 'EOF'
+        cat > .repo/local_manifests/latte.xml << EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <manifest>
-            <!-- Add your device tree -->
-            <project path="${{ inputs.DEVICE_PATH }}" name="$(echo ${{ inputs.DEVICE_TREE_URL }} | cut -d'/' -f4-5)" remote="github" revision="${{ inputs.DEVICE_TREE_BRANCH }}" />
-
-            <!-- Include external Magisk repo for repack binaries -->
-            <project path="external/magisk-prebuilt" name="external_magisk-prebuilt" remote="TeamWin" revision="android-12.1"/>
+          <project path="${{ inputs.DEVICE_PATH }}" name="$(echo ${{ inputs.DEVICE_TREE_URL }} | cut -d'/' -f4-5)" revision="${{ inputs.DEVICE_TREE_BRANCH }}" remote="github" />
         </manifest>
         EOF
-        
-        # Синхронизируем все проекты
+        # Сначала синхронизируем все проекты, чтобы обновить кэш
         repo sync -j$(nproc --all)
+        # Затем принудительно синхронизируем дерево устройств
+        repo sync -j$(nproc --all) -f ${{ inputs.DEVICE_PATH }}
       working-directory: workspace
 
     - name: Fix device tree files
