@@ -321,6 +321,26 @@ jobs:
         ls -la device/latte/
       working-directory: workspace
 
+    - name: Fix Android.bp
+      run: |
+        cat > device/latte/Android.bp << 'EOF'
+        // SPDX-FileCopyrightText: The LineageOS Project
+        // SPDX-License-Identifier: Apache-2.0
+        
+        // This is a minimal Android.bp for TWRP device tree
+        // It defines the device as a subdir for build system
+        
+        subdirs = [
+            "rootdir",
+        ]
+        
+        // Include any additional subdirectories if needed
+        // subdirs += ["prebuilts"]
+        EOF
+        echo "✅ Fixed Android.bp"
+        cat device/latte/Android.bp
+      working-directory: workspace
+
     - name: Fix 64-bit app support
       run: |
         # Добавляем флаг для поддержки 32-битных приложений
