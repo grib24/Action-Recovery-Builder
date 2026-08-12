@@ -142,11 +142,6 @@ jobs:
         repo sync -j$(nproc --all) --force-sync
       working-directory: workspace
 
-    - name: Clone device tree
-      run: |
-        git clone --depth=1 ${{ inputs.DEVICE_TREE_URL }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
-      working-directory: workspace
-
     - name: Create local manifest
       run: |
         mkdir -p .repo/local_manifests
@@ -156,7 +151,8 @@ jobs:
           <project path="${{ inputs.DEVICE_PATH }}" name="$(echo ${{ inputs.DEVICE_TREE_URL }} | cut -d'/' -f4-5)" revision="${{ inputs.DEVICE_TREE_BRANCH }}" remote="github" />
         </manifest>
         EOF
-        repo sync -j$(nproc --all)
+        # Синхронизируем только новое дерево
+        repo sync -j$(nproc --all) ${{ inputs.DEVICE_PATH }}
       working-directory: workspace
 
     - name: Repopick Gerrit patches
