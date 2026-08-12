@@ -217,7 +217,7 @@ jobs:
 
         # Prebuilt DTB Image configuration (Obligatory for vendor_boot Header v4)
         TARGET_FORCE_PREBUILT_KERNEL := false
-        TARGET_PREBUILT_DTB := $(DEVICE_PATH)/dtb.img
+        TARGET_PREBUILT_DTB := device/latte/dtb.img
         BOARD_INCLUDE_DTB_IN_BOOTIMG := true
         BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
 
@@ -332,12 +332,19 @@ jobs:
         fi
       working-directory: workspace
 
-    - name: Fix dtb path in BoardConfig.mk
+    - name: Copy dtb.img to output directory
       run: |
-        # Исправляем путь к dtb.img в BoardConfig.mk
-        sed -i 's|$(DEVICE_PATH)/dtb.img|device/latte/dtb.img|g' device/latte/BoardConfig.mk
-        echo "✅ Fixed dtb path in BoardConfig.mk"
-        grep -A2 "TARGET_PREBUILT_DTB" device/latte/BoardConfig.mk || echo "TARGET_PREBUILT_DTB not found"
+        # Создаём папку для вывода, если её нет
+        mkdir -p out/target/product/latte
+        # Копируем dtb.img в папку сборки
+        if [ -f device/latte/dtb.img ]; then
+          cp device/latte/dtb.img out/target/product/latte/dtb.img
+          echo "✅ dtb.img copied to out/target/product/latte/"
+        else
+          echo "❌ dtb.img not found in device/latte/"
+          exit 1
+        fi
+        ls -la out/target/product/latte/
       working-directory: workspace
 
     - name: Fix Android.bp
