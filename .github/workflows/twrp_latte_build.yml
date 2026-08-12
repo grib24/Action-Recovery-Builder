@@ -160,6 +160,83 @@ jobs:
         repo sync -j$(nproc --all) ${{ inputs.DEVICE_PATH }}
       working-directory: workspace
 
+    - name: Fix device tree files
+      run: |
+        # Исправляем AndroidProducts.mk
+        cat > device/realme/ussi_arm64/AndroidProducts.mk << 'EOF'
+        # SPDX-FileCopyrightText: The LineageOS Project
+        # SPDX-License-Identifier: Apache-2.0
+
+        PRODUCT_MAKEFILES := $(LOCAL_DIR)/twrp_latte.mk
+
+        COMMON_LUNCH_CHOICES := \
+            twrp_latte-eng \
+            twrp_latte-userdebug \
+            twrp_latte-user
+        EOF
+        
+        # Исправляем twrp_latte.mk (упрощаем)
+        cat > device/realme/ussi_arm64/twrp_latte.mk << 'EOF'
+        # SPDX-FileCopyrightText: The LineageOS Project
+        # SPDX-License-Identifier: Apache-2.0
+
+        # Inherit from TWRP product core configuration
+        $(call inherit-product, vendor/twrp/config/common.mk)
+
+        # Inherit from device-specific configuration
+        $(call inherit-product, device/realme/ussi_arm64/device.mk)
+
+        # Product Details Configured for Realme C61 (latte)
+        PRODUCT_DEVICE := latte
+        PRODUCT_NAME := twrp_latte
+        PRODUCT_BRAND := realme
+        PRODUCT_MODEL := RMX3930
+        PRODUCT_MANUFACTURER := realme
+
+        PRODUCT_GMS_CLIENTID_BASE := android-realme
+
+        # Official Russia Android 16 Fingerprint from ADB Telemetry
+        PRODUCT_BUILD_PROP_OVERRIDES += \
+            TARGET_DEVICE="RE6054" \
+            PRODUCT_NAME="RMX3930RU" \
+            TARGET_PRODUCT="RMX3930RU" \
+            BUILD_FINGERPRINT="realme/RMX3930RU/RE6054:16/BP2A.250605.031.A3/U.1783691494:user/release-keys"
+        EOF
+        
+        # Исправляем device.mk (упрощаем)
+        cat > device/realme/ussi_arm64/device.mk << 'EOF'
+        # SPDX-FileCopyrightText: The LineageOS Project
+        # SPDX-License-Identifier: Apache-2.0
+
+        # Inherit from TWRP base configuration
+        $(call inherit-product, vendor/twrp/config/common.mk)
+
+        # Device specific configuration
+        PRODUCT_COPY_FILES += \
+            $(LOCAL_PATH)/rootdir/etc/fstab.ums9230_latte:$(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/fstab.ums9230_latte
+
+        # Soong namespaces
+        PRODUCT_SOONG_NAMESPACES += \
+            $(LOCAL_PATH)
+        EOF
+        
+        echo "✅ All device tree files fixed!"
+        echo "📁 AndroidProducts.mk:"
+        cat device/realme/ussi_arm64/AndroidProducts.mk
+        echo ""
+        echo "📁 twrp_latte.mk:"
+        head -5 device/realme/ussi_arm64/twrp_latte.mk
+      working-directory: workspace
+
+    - name: Refresh product list
+      run: |
+        source build/envsetup.sh
+        echo "🔄 Refreshing product list..."
+        # Принудительно обновляем кэш продуктов
+        lunch twrp_latte-bp2a-eng 2>/dev/null || echo "⏳ Lunch will be retried later"
+      working-directory: workspace
+      continue-on-error: true
+
     - name: Repopick Gerrit patches
       if: inputs.REPOPICK_PATCHES != null
       run: |
