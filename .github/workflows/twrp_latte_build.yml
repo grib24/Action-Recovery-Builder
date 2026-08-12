@@ -321,6 +321,14 @@ jobs:
         ls -la device/latte/
       working-directory: workspace
 
+    - name: Fix 64-bit app support
+      run: |
+        # Добавляем флаг для поддержки 32-битных приложений
+        echo "TARGET_SUPPORTS_64_BIT_APPS := false" >> device/latte/BoardConfig.mk
+        echo "✅ Added TARGET_SUPPORTS_64_BIT_APPS := false to BoardConfig.mk"
+        grep -A2 -B2 "64_BIT" device/latte/BoardConfig.mk || echo "Flag added"
+      working-directory: workspace
+
     - name: Remove duplicate device tree
       run: |
         # Удаляем старое дерево устройств, чтобы избежать конфликта
