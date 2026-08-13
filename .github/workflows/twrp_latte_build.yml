@@ -225,6 +225,16 @@ jobs:
         BOARD_FLASH_BLOCK_SIZE := 262144
         BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE := 104857600
 
+        # Указываем, что recovery должен быть в vendor_boot
+        BOARD_USES_RECOVERY_AS_BOOT := true
+        BOARD_USES_VENDOR_BOOT := true
+
+        # Указываем путь к recovery.img, который будет упакован в vendor_boot
+        BOARD_PREBUILT_VENDOR_RAMDISK := $(TARGET_OUT)/recovery.img
+
+        # Принудительно включаем сборку recovery
+        TARGET_NO_RECOVERY := false
+
         # Recovery fstab
         TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/rootdir/etc/fstab.ums9230_latte
 
@@ -481,6 +491,19 @@ jobs:
           make $(tr -d _ <<< ${{ inputs.BUILD_TARGET }})image -j$(nproc --all)
         fi
       working-directory: workspace
+
+    - name: Check recovery.img
+      run: |
+        if [ -f out/target/product/latte/recovery.img ]; then
+          echo "✅ recovery.img found!"
+          ls -la out/target/product/latte/recovery.img
+        else
+          echo "❌ recovery.img NOT found!"
+          echo "📁 Contents of out/target/product/latte/:"
+          ls -la out/target/product/latte/
+        fi
+      working-directory: workspace
+      continue-on-error: true
 
     - name: Building recovery (Omni)
       if: steps.manifest.outputs.build_type == 'omni'
