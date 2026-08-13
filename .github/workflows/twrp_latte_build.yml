@@ -293,7 +293,9 @@ jobs:
 
         # Device specific configuration
         PRODUCT_COPY_FILES += \
-            $(LOCAL_PATH)/rootdir/etc/fstab.ums9230_latte:$(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/fstab.ums9230_latte
+            $(LOCAL_PATH)/rootdir/etc/fstab.ums9230_latte:$(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/fstab.ums9230_latte \
+            $(LOCAL_PATH)/rootdir/system/etc/recovery.fstab:$(TARGET_OUT)/etc/recovery.fstab \
+            $(LOCAL_PATH)/rootdir/system/etc/recovery.tmpfsdata.fstab:$(TARGET_OUT)/etc/recovery.tmpfsdata.fstab
 
         # Soong namespaces
         PRODUCT_SOONG_NAMESPACES += \
@@ -466,13 +468,17 @@ jobs:
         echo "Trying lunch: $LUNCH_TARGET"
         if lunch $LUNCH_TARGET 2>/dev/null; then
           echo "Lunch succeeded, building..."
+          # Сначала собираем recovery
+          make recoveryimage -j$(nproc --all)
+          # Затем собираем vendor_boot
           make $(tr -d _ <<< ${{ inputs.BUILD_TARGET }})image -j$(nproc --all)
         else
           echo "Lunch failed, using direct make with TARGET_RELEASE..."
           export TARGET_PRODUCT=twrp_${{ inputs.DEVICE_NAME }}
           export TARGET_DEVICE=${{ inputs.DEVICE_NAME }}
           export TARGET_RELEASE=${RELEASE}
-          make -j$(nproc --all) $(tr -d _ <<< ${{ inputs.BUILD_TARGET }})image
+          make recoveryimage -j$(nproc --all)
+          make $(tr -d _ <<< ${{ inputs.BUILD_TARGET }})image -j$(nproc --all)
         fi
       working-directory: workspace
 
