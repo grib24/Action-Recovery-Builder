@@ -172,11 +172,6 @@ jobs:
         // SPDX-License-Identifier: Apache-2.0
 
         soong_namespace {
-            imports: [
-                "hardware/google/interfaces",
-                "hardware/google/pixel",
-                "hardware/interfaces",
-            ],
         }
         EOF
         echo "✅ Created correct Android.bp"
