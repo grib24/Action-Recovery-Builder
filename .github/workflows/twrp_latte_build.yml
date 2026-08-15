@@ -182,56 +182,6 @@ jobs:
         repo sync -j$(nproc --all) device/latte
       working-directory: workspace
 
-    - name: Fix Android.bp
-      run: |
-        # Удаляем устаревший Android.mk
-        rm -f device/latte/Android.mk
-        
-        # Создаём правильный корневой Android.bp
-        cat > device/latte/Android.bp << 'EOF'
-        //
-        // Copyright (C) 2025 The Android Open Source Project
-        //
-        // SPDX-License-Identifier: Apache-2.0
-        //
-
-        soong_namespace {
-        }
-        EOF
-        echo "✅ Fixed root Android.bp"
-        cat device/latte/Android.bp
-        
-        # Создаём правильный Android.bp в rootdir
-        cat > device/latte/rootdir/Android.bp << 'EOF'
-        // SPDX-FileCopyrightText: The LineageOS Project
-        // SPDX-License-Identifier: Apache-2.0
-
-        // Core Unisoc Boot Scripts
-        sh_binary {
-            name: "create_splloader_dual_slot_byname_path.sh",
-            src: "bin/create_splloader_dual_slot_byname_path.sh",
-            vendor: true,
-        }
-
-        // Hardware Init Configuration
-        prebuilt_etc {
-            name: "init.ums9230_latte.rc",
-            src: "etc/init.ums9230_latte.rc",
-            sub_dir: "init/hw",
-            vendor: true,
-        }
-
-        prebuilt_etc {
-            name: "init.ums9230_latte.usb.rc",
-            src: "etc/init.ums9230_latte.usb.rc",
-            sub_dir: "init/hw",
-            vendor: true,
-        }
-        EOF
-        echo "✅ Fixed rootdir/Android.bp"
-        cat device/latte/rootdir/Android.bp
-      working-directory: workspace
-
     - name: Repopick Gerrit patches
       if: inputs.REPOPICK_PATCHES != null
       run: |
